@@ -1,6 +1,4 @@
-#include <stdlib.h>
 #include <stdbool.h>
-
 #include <dsp-alg-types.h>
 
 /* resampling */

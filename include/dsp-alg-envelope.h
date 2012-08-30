@@ -1,33 +1,40 @@
 #ifndef DSP_ALG_ENVELOPE_H
 #define DSP_ALG_ENVELOPE_H
 
-#include "dsp-alg-types.h"
-#include "time.h"
+#include <dsp-alg-types.h>
+#include <time.h>
 
-void dsp_alg_hold(size_t n, t_num cur, t_num* out);
-void dsp_alg_line(size_t n, t_num incr, t_num *cur, t_num *out);
-void dsp_alg_expline(size_t n, t_num incr, t_num *cur, t_num *out);
+/* low level segments */
 
-/* segments */
+/* There is assumption that breackpoints live in
+	control rate, so each segment contains at least
+	block_size of points, and "dur" is count in 
+	control rate ticks !not sample rate! */
+typedef struct{
+	t_num incr;		/* increment */
+	t_num base;		/* base point */
+	t_time dur;		/* duration in control rate ticks */
+    const t_options *opt; /* refrence to global options */
+} t_seg;
 
-typedef struct _linseg t_linseg;
-typedef t_linseg t_expseg;
+/* linear segments */
 
-t_linseg *dsp_alg_linseg_init(size_t sample_rate, size_t block_size);
-void dsp_alg_linseg_free(t_linseg *);
+typedef struct {
+    t_seg seg;
+} t_linseg;
 
-t_expseg *dsp_alg_expseg_init(size_t sample_rate, size_t block_size);
-void dsp_alg_expseg_free(t_expseg *);
+void dsp_alg_linseg_init( t_linseg *res, const t_options *opt, double x0 );
+void dsp_alg_linseg( t_linseg *st, t_num *out );
+void dsp_alg_linseg_set( t_linseg *st, t_num dur, t_num next_val );
 
-/* clears all scheduled messages and sets last value
-   to the current value */
-void dsp_alg_linseg_reset(t_linseg *st);
-void dsp_alg_expseg_reset(t_expseg *st);
+/* exponential segments */
 
-void dsp_alg_linseg_append(t_linseg *st, t_num dur, t_num last);
-void dsp_alg_expseg_append(t_expseg *st, t_num dur, t_num last);
+typedef struct {
+    t_seg seg;
+} t_expseg;
 
-void dsp_alg_linseg(size_t n, t_linseg *st, t_num *out);
-void dsp_alg_expseg(size_t n, t_expseg *st, t_num *out);
+void dsp_alg_expseg_init( t_expseg *res, const t_options *opt, double x0 );
+void dsp_alg_expseg( t_expseg *st, t_num *out );
+void dsp_alg_expseg_set( t_expseg *st, t_num dur, t_num next_val );
 
 #endif

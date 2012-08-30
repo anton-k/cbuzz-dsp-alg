@@ -21,17 +21,23 @@
 #define EPS 1e-6
 #endif
 
-
 typedef double t_num;
 typedef bool   t_bool;
 
-t_num pi_sr(size_t sample_rate);
-t_num tau_sr(size_t sample_rate);
+typedef struct _options {
+    size_t sr, cr, bs;
+    t_num pi_sr, tau_sr, recip_sr;
+    t_num pi, sqrt2, eps, tau;
+} t_options;
 
-size_t control_rate(size_t sample_rate, size_t block_size);
+void options_init( t_options *opt, 
+    size_t sample_rate, size_t block_size );
 
-t_num *sig_init(size_t block_size);
+t_num *sig_init(const t_options *);
 void sig_free(t_num *a);
 
-void sig_print(size_t n, const t_num *in);
+t_bool *sig_bool_init(const t_options *);
+void sig_bool_free(t_bool *a);
+
+void sig_print(const t_options *opt, const t_num *in);
 #endif

@@ -1,41 +1,27 @@
-#include <stdlib.h>
 #include <math.h>
-
 #include <dsp-alg-types.h>
 #include <dsp-alg-num.h>
 
+#include <dsp-alg-phasor.h>
 #include <time.h>
-
 
 /* phasor */
 
-typedef struct {
-    t_num cur;
-    t_num recip_sr;
-} t_phasor;
-
-t_phasor *dsp_alg_phasor_init(size_t sample_rate, t_num cur)
+void dsp_alg_phasor_init(t_phasor *res, const t_options *opt, t_num cur)
 {
     if (cur >= 1)
         cur = cur - (t_num ) ((size_t) cur);
     if (cur < 0)
         cur = (t_num) 1 - (cur - (t_num) ((size_t) cur));
 
-    t_phasor *res = (t_phasor*) malloc(sizeof(t_phasor));   /* M */
-
+    res->bs = opt->bs;
     res->cur = cur;
-    res->recip_sr = (t_num) 1.0 / (t_num) sample_rate;
-    return res;
+    res->recip_sr = opt->recip_sr ;
 }
 
-void dsp_alg_phasor_free(t_phasor *st)
+void dsp_alg_phasor(t_phasor *st, const t_num *in, t_num *out)
 {
-    free(st);                                               /* F */
-}
-
-
-void dsp_alg_phasor(size_t n, t_phasor *st, const t_num *in, t_num *out)
-{
+    size_t n = st->bs;
     t_num k = st->recip_sr;
     t_num cur = st->cur;
 
@@ -51,27 +37,14 @@ void dsp_alg_phasor(size_t n, t_phasor *st, const t_num *in, t_num *out)
     st->cur = cur;
 }
 
-/* linear table */
-typedef struct {
-    size_t leng;
-    t_num *samples;
-} t_tabr;
 
-t_tabr *dsp_alg_tabr_init(size_t leng)
+void dsp_alg_tabr_init(t_tabr *res, const t_options *opt, 
+    size_t leng, t_num *samples)
 {
-    t_tabr *res = (t_tabr *) malloc(sizeof(t_tabr));        /* M */
     res->leng    = leng;
-    res->samples = (t_num *) calloc(leng + 1, sizeof(t_num));
-    return res;
+    res->samples = samples;
+    res->bs      = opt->bs;
 }
-
-
-void dsp_alg_tabr_free(t_tabr *st)
-{
-    free(st->samples);                                      /* F */
-    free(st);                                               /* F */
-}
-
 
 size_t dsp_alg_tabr_length(t_tabr *a)
 {
@@ -83,8 +56,9 @@ t_num *dsp_alg_tabr_samples(t_tabr *a)
     return a->samples;
 }
 
-void dsp_alg_tabr(size_t n, t_tabr *st, const t_num *in, t_num *out)
+void dsp_alg_tabr(t_tabr *st, const t_num *in, t_num *out)
 {
+    size_t n = st->bs;
     int x0;
     t_num fx, x, dx, y0, y1;
     size_t leng = st->leng;
@@ -106,34 +80,17 @@ void dsp_alg_tabr(size_t n, t_tabr *st, const t_num *in, t_num *out)
     }
 }
 
-
-typedef struct {
-    t_phasor *phasor;
-    t_tabr   *tabr;  
-} t_oscil;
-
-
-t_oscil *dsp_alg_oscil_init(
-    size_t sample_rate, t_num phase, t_tabr *tab)
+void dsp_alg_oscil_init(
+    t_oscil *res, const t_options *opt, t_phasor *phasor, t_tabr *tabr)
 {
-    t_oscil *res = (t_oscil *) malloc(sizeof(t_oscil));     /* M */
-
-    res->phasor = dsp_alg_phasor_init(sample_rate, phase);  /* hidden M */
-    res->tabr   = tab;
-
-    return res;
+    res->phasor = phasor;
+    res->tabr   = tabr;
 }
 
-void dsp_alg_oscil_free(t_oscil *st)
+void dsp_alg_oscil(t_oscil *st, const t_num *in, t_num *out)
 {
-    dsp_alg_phasor_free(st->phasor);                        /* hidden F */
-    free(st);                                               /* F */
-}
-
-void dsp_alg_oscil(size_t n, t_oscil *st, const t_num *in, t_num *out)
-{
-    dsp_alg_phasor(n, st->phasor, in, out);
-    dsp_alg_scale(n, (t_num) ((st->tabr)->leng-1), out, out);
-    dsp_alg_tabr(n, st->tabr, out, out);
+    dsp_alg_phasor(st->phasor, in, out);
+    dsp_alg_scale(st->phasor->bs, (t_num) ((st->tabr)->leng-1), out, out);
+    dsp_alg_tabr(st->tabr, out, out);
 }
 

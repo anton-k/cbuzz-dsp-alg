@@ -3,76 +3,58 @@
 
 #include "dsp-alg-types.h"
 
-/* circular buffer */
-/* size is whole multiplier of cr */
-typedef struct _buf t_buf;
+size_t dsp_alg_time_to_buf_length( const t_options *opt, t_num dur );
 
-/* init buffer
-    dt -- length of the bufer in samples
- */
-t_buf *dsp_alg_buf_init_with_time(
-    size_t sample_rate, size_t block_size, t_num dt); 
-t_buf *dsp_alg_buf_init(size_t block_size, size_t num_of_frames); 
+typedef struct {
+    t_num     *samples;
+    size_t    length;  
+    size_t    dur;
+    const t_options *opt;
+} t_buf;
 
-void dsp_alg_buf_free(t_buf *in);
-size_t dsp_alg_buf_length(t_buf *a);
+void dsp_alg_buf_init( 
+    t_buf *res, const t_options *opt,
+    size_t length, t_num *samples );
 
-void dsp_alg_buf_trigger(t_buf *a, 
-    void (*fn)(void *, size_t, t_num *), void *);
+typedef struct {
+    const t_buf *buf;
+    size_t count_to_last;
+    t_num  *cur;
+} t_buf_seek;
 
-void dsp_alg_buf_trigger_part(t_buf *a, 
-    void (*fn)(void *, size_t, t_num *), void *st);
+typedef struct { t_buf_seek seek; } t_buf_read;
+typedef struct { t_buf_seek seek; } t_buf_write;
+typedef struct { t_buf_seek seek; } t_buf_append;
 
-void dsp_alg_buf_tirgger2(t_buf *a, t_buf *b, 
-    void (*fn)(void *, size_t, t_num *, t_num *), void *st);
+typedef struct {
+    t_buf *buf;
+    size_t count_to_last;
+    t_buf_cbk cbk;
+    void *data;
+} t_buf_trigger;
 
-void dsp_alg_buf_trigger2_part(t_buf *a, t_buf *b, 
-    void (*fn)(void *, size_t, t_num *, t_num *), void *st);
+typedef void (*t_buf_cbk)( size_t length, t_num *samples, void *data );
 
-void dsp_alg_bufw(size_t n, t_buf *st, const t_num *in);
-void dsp_alg_bufr(size_t n, t_buf *st, t_num *out);
+typedef struct { t_buf_trigger trigger; } t_buf_trigger_begin;
+typedef struct { t_buf_trigger trigger; } t_buf_trigger_end;
 
-typedef struct _delay t_delay;
+void dsp_alg_buf_read_init( t_buf_read *res, t_buf *buf );
+void dsp_alg_buf_read( t_buf_read *st, t_num *out );
 
-t_delay *dsp_alg_delay_init(
-    size_t control_rate, size_t block_size,
-    const t_buf *buf, t_num dt);
+void dsp_alg_buf_write_init( t_buf_write *res, t_buf *buf );
+void dsp_alg_buf_write( t_buf_write *st, const t_num *in );
 
-void dsp_alg_delay_free(t_delay *st);
-void dsp_alg_delay(size_t n, const t_delay *st, t_num *out);
-typedef struct _vdelay t_vdelay;
+void dsp_alg_buf_append_init( t_buf_append *res, t_buf *buf );
+void dsp_alg_buf_append( t_buf_append *st, const t_num *in );
 
-t_vdelay *dsp_alg_vdelay_init(t_buf *buf);
-void dsp_alg_vdelay_free(t_vdelay *st);
-void dsp_alg_vdelay(size_t n, t_vdelay *st, const t_num *in, t_num *out);
+void dsp_alg_buf_read_vdelay(t_buf_read *st, const t_num *in, t_num *out);
+void dsp_alg_buf_trigger_begin_init( t_buf_trigger_begin *res, 
+    t_buf *buf, t_buf_cbk cbk, void *data );
 
-
-/* ----------------------------------------------------------- */
-/* stereo buffer */
-
-/* circular buffer */
-/* size is whole multiplier of cr */
-typedef struct _buf2 t_buf2;
-
-/* init buffer
-    dt -- length of the bufer in samples
-
-    each frame contains 2*block_size samples
- */
-t_buf2 *dsp_alg_buf2_init(size_t block_size, size_t num_of_frames);
-t_buf2 *dsp_alg_buf2_init_with_time(
-    size_t control_rate, size_t block_size, t_num dt);
-void dsp_alg_buf2_free(t_buf2 *in);
-size_t dsp_alg_buf2_length(t_buf2 *a);
-void dsp_alg_buf2w(size_t n, t_buf2 *st, const t_num *ina, const t_num *inb);
-void dsp_alg_buf2r(size_t n, t_buf2 *st, t_num *outa, t_num *outb);
-
-/* function takes number of !frames! not samples */
-void dsp_alg_buf2_trigger(t_buf2 *a, 
-    void (*fn)(void *, size_t, t_num *), void *);
-
-void dsp_alg_buf2_trigger_part(t_buf2 *a, 
-    void (*fn)(void *, size_t, t_num *), void *st);
+void dsp_alg_buf_trigger_begin( t_buf_trigger_begin *st );
+void dsp_alg_buf_trigger_end_init( t_buf_trigger_begin *res, 
+    t_buf *buf, t_buf_cbk cbk, void *data );
+void dsp_alg_buf_trigger_end( t_buf_trigger_end *st );
 
 #endif
 

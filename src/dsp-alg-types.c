@@ -4,26 +4,26 @@
 
 #include <dsp-alg-types.h>
 
-t_num pi_sr(size_t sample_rate)
+void options_init( t_options *opt, 
+    size_t sample_rate, size_t block_size )
 {
-    return PI * (t_num) sample_rate;
+    opt->sr         = sample_rate;
+    opt->bs         = block_size;
+    opt->cr         = sample_rate / block_size;
+    
+    opt->pi_sr      = PI * (t_num) sample_rate;
+    opt->tau_sr     = TAU * (t_num) sample_rate;
+    opt->recip_sr   = (t_num) 1.0 / (t_num) sample_rate;
+
+    opt->eps        = EPS;
+    opt->pi         = PI;
+    opt->tau        = TAU;
+    opt->sqrt2      = SQRT2;
 }
 
-t_num tau_sr(size_t sample_rate)
+t_num *sig_init(const t_options *opt)
 {
-    return TAU * (t_num) sample_rate;
-}
-
-
-size_t control_rate(size_t sample_rate, size_t block_size)
-{
-    return sample_rate / block_size;
-}
-
-
-t_num *sig_init(size_t block_size)
-{
-    return (t_num *) calloc(block_size, sizeof(t_num));
+    return (t_num *) calloc(opt->bs, sizeof(t_num));
 }
 
 void sig_free(t_num *a)
@@ -32,9 +32,9 @@ void sig_free(t_num *a)
 }
 
 
-t_bool *sig_bool_init(size_t block_size)
+t_bool *sig_bool_init(const t_options *opt)
 {
-    return (t_bool *) calloc(block_size, sizeof(t_bool));
+    return (t_bool *) calloc(opt->bs, sizeof(t_bool));
 }
 
 void sig_bool_free(t_bool *a)
@@ -42,9 +42,10 @@ void sig_bool_free(t_bool *a)
     free(a);
 }
 
-void sig_print(size_t n, const t_num *in)
+void sig_print(const t_options *opt, const t_num *in)
 {
     int i;
+    int n = opt->bs;
     for (i = 0; i < n; i++) {
         printf("%.2f", *in++);
         if (i % (n-1) != 0 || i == 0)
